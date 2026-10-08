@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Decide — AI Decision Helper</title>
+<style>
+/* Decide — AI decision helper */
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600&display=swap");
+
+/* ---------- Tokens ---------- */
+:root {
+  --bg: #eef1f6;
+  --surface: #ffffff;
+  --surface-2: #f5f7fb;
+  --ink: #0f172a;
+  --mute: #5b6478;
+  --line: #dde2ec;
+  --accent: #3b4bdc;
+  --accent-ink: #ffffff;
+  --accent-soft: #e6e9fc;
+  --win: #0e8a5f;
+  --win-soft: #dff4ea;
+  --danger: #c2330f;
+  --shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 8px 24px -12px rgba(15, 23, 42, 0.12);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --font-head: "Bricolage Grotesque", "Figtree", system-ui, sans-serif;
+  --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c1018;
+    --surface: #151a25;
+    --surface-2: #1b2130;
+    --ink: #e8ecf5;
+    --mute: #98a2b8;
+    --line: #283044;
+    --accent: #8b97ff;
+    --accent-ink: #0c1018;
+    --accent-soft: #232a4d;
+    --win: #4fd1a0;
+    --win-soft: #12312a;
+    --danger: #ff8a65;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -12px rgba(0, 0, 0, 0.5);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0c1018;
+  --surface: #151a25;
+  --surface-2: #1b2130;
+  --ink: #e8ecf5;
+  --mute: #98a2b8;
+  --line: #283044;
+  --accent: #8b97ff;
+  --accent-ink: #0c1018;
+  --accent-soft: #232a4d;
+  --win: #4fd1a0;
+  --win-soft: #12312a;
+  --danger: #ff8a65;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -12px rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
+}
+
+/* ---------- Base ---------- */
+:root {
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+html {
+  scroll-padding-top: env(safe-area-inset-top, 0px);
+  scroll-behavior: smooth;
+}
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.55 var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+[hidden] {
+  display: none !important;
+}
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.app {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 28px 16px 72px;
+}
+
+/* ---------- Header ---------- */
+.topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.brand h1 {
+  font: 700 clamp(32px, 6vw, 44px) / 1.05 var(--font-head);
+  letter-spacing: -0.03em;
+  margin: 0 0 8px;
+}
+.brand p {
+  margin: 0;
+  max-width: 46ch;
+  color: var(--mute);
+}
+.icon-btn {
+  flex: none;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+.icon-btn:hover {
+  background: var(--surface-2);
+}
+.icon-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ---------- Cards ---------- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+.card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.card h2 {
+  font: 700 19px / 1.2 var(--font-head);
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+.hint {
+  font-size: 13.5px;
+  color: var(--mute);
+  margin: 0;
+}
+
+/* ---------- Form ---------- */
+.field + .field {
+  margin-top: 16px;
+}
+label,
+.label {
+  display: block;
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+.label .opt {
+  font-weight: 400;
+  color: var(--mute);
+}
+input[type="text"],
+input[type="password"],
+select,
+textarea {
+  width: 100%;
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 11px 13px;
+  transition: border-color 0.15s, background 0.15s;
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--mute);
+  opacity: 0.8;
+}
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--surface);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 12px;
+}
+.key-wrap {
+  position: relative;
+}
+.key-wrap input {
+  padding-right: 64px;
+}
+.key-wrap .link-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* settings disclosure */
+details.settings {
+  padding: 0;
+}
+details.settings summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  font: 700 16px var(--font-head);
+  border-radius: var(--radius);
+}
+details.settings summary::-webkit-details-marker {
+  display: none;
+}
+details.settings summary .state {
+  font: 500 13px var(--font-body);
+  color: var(--mute);
+}
+details.settings summary::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--mute);
+  border-bottom: 2px solid var(--mute);
+  transform: rotate(45deg);
+  transition: transform 0.2s;
+  margin-left: auto;
+  margin-right: 4px;
+}
+details.settings[open] summary::after {
+  transform: rotate(-135deg);
+}
+details.settings .body {
+  padding: 0 20px 20px;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+
+/* ---------- Buttons ---------- */
+button {
+  font: 600 15px var(--font-body);
+  border: 0;
+  border-radius: var(--radius-sm);
+  padding: 12px 20px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: filter 0.15s, transform 0.1s, background 0.15s;
+}
+button:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+button.ghost {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+button.link-btn {
+  background: none;
+  color: var(--accent);
+  padding: 6px 8px;
+  font-size: 13px;
+}
+button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.err {
+  color: var(--danger);
+  font-size: 14px;
+  margin: 14px 0 0;
+  min-height: 0;
+}
+.err:empty {
+  display: none;
+}
+
+/* ---------- Results: verdict ---------- */
+.verdict {
+  border-color: var(--win);
+  background: linear-gradient(0deg, var(--win-soft), var(--win-soft)), var(--surface);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 20px;
+  align-items: center;
+}
+.ring {
+  --p: 0;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  background: conic-gradient(var(--win) calc(var(--p) * 1%), color-mix(in srgb, var(--win) 18%, transparent) 0);
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+.ring::before {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  border-radius: 50%;
+  background: var(--surface);
+}
+.ring span {
+  position: relative;
+  font: 700 28px var(--font-head);
+  letter-spacing: -0.03em;
+}
+.verdict .kicker {
+  font-size: 13.5px;
+  color: var(--win);
+  font-weight: 600;
+  margin: 0 0 2px;
+}
+.verdict h2 {
+  font: 700 clamp(24px, 4.5vw, 32px) / 1.1 var(--font-head);
+  letter-spacing: -0.02em;
+  margin: 0 0 8px;
+  overflow-wrap: anywhere;
+}
+.verdict p {
+  margin: 0;
+}
+.verdict .note {
+  margin-top: 8px;
+  font-size: 13.5px;
+  color: var(--mute);
+}
+
+/* ---------- Results: ranking ---------- */
+.rank {
+  display: grid;
+  grid-template-columns: minmax(90px, 170px) 1fr 40px;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 0;
+}
+.rank .name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.rank .pos {
+  color: var(--mute);
+  font-weight: 500;
+  font-size: 13px;
+  width: 16px;
+}
+.bar {
+  height: 14px;
+  border-radius: 99px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.bar > i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 99px;
+  transition: width 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.rank.first .bar > i {
+  background: var(--win);
+}
+.rank .val {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.pill {
+  display: inline-block;
+  background: var(--win-soft);
+  color: var(--win);
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 9px;
+}
+
+/* ---------- Results: matrix ---------- */
+.scroll {
+  overflow-x: auto;
+  margin: 0 -4px;
+  padding: 0 4px;
+}
+table {
+  border-collapse: separate;
+  border-spacing: 4px;
+  width: 100%;
+  min-width: 520px;
+  font-size: 14px;
+}
+th {
+  font-weight: 600;
+  vertical-align: bottom;
+  padding: 4px 4px 8px;
+  line-height: 1.25;
+}
+th.opt-h {
+  text-align: left;
+  color: var(--mute);
+  font-weight: 500;
+}
+td.opt {
+  font-weight: 600;
+  padding: 8px 6px 8px 0;
+  min-width: 110px;
+}
+td.s {
+  --s: 0;
+  text-align: center;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  border-radius: 8px;
+  padding: 10px 6px;
+  background: color-mix(in srgb, var(--accent) calc(var(--s) * 38%), var(--surface-2));
+  cursor: help;
+  transition: box-shadow 0.15s;
+}
+td.s:hover,
+td.s:focus-visible,
+td.s.on {
+  box-shadow: inset 0 0 0 2px var(--accent);
+  outline: none;
+}
+.crit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.crit .w {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--mute);
+}
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  min-width: 72px;
+  max-width: 110px;
+  height: 22px;
+  background: transparent;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 99px;
+  background: var(--line);
+}
+input[type="range"]::-moz-range-track {
+  height: 6px;
+  border-radius: 99px;
+  background: var(--line);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -6px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 3px solid var(--surface);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 3px solid var(--surface);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.why {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-size: 14px;
+  color: var(--mute);
+  min-height: 42px;
+}
+.why strong {
+  color: var(--ink);
+}
+
+/* ---------- Stress test ---------- */
+.devil-out {
+  margin: 14px 0 0;
+  white-space: pre-wrap;
+  max-width: 68ch;
+}
+.devil-out:empty {
+  display: none;
+}
+
+/* ---------- Entrance (single moment, results only) ---------- */
+.reveal {
+  animation: reveal 0.45s ease both;
+}
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 560px) {
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+  .verdict {
+    grid-template-columns: 1fr;
+    text-align: left;
+  }
+  .rank {
+    grid-template-columns: 1fr 36px;
+  }
+  .rank .bar {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .card {
+    padding: 16px;
+  }
+  .actions button {
+    flex: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------- Additions: menu, panels, chat, helpers ---------- */
+.menuwrap{position:relative;flex:none}
+.menu{position:absolute;right:0;top:50px;z-index:20;min-width:250px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:6px;box-shadow:var(--shadow)}
+.menu button{display:flex;width:100%;justify-content:flex-start;background:none;color:var(--ink);font-weight:500;padding:10px 12px}
+.menu button:hover{background:var(--accent-soft);filter:none}
+.modal{position:fixed;inset:0;background:rgba(10,14,24,.5);z-index:30;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:100%;max-width:640px;max-height:90vh;overflow:auto;border-radius:var(--radius) var(--radius) 0 0;padding:12px 14px calc(14px + env(safe-area-inset-bottom,0px))}
+@media (min-width:700px){.modal{align-items:center}.sheet{border-radius:var(--radius)}}
+.sheethead{display:flex;justify-content:flex-end;margin-bottom:8px}
+.msg{padding:9px 13px;border-radius:14px;margin:6px 0;font-size:15px;white-space:pre-wrap}
+.msg.u{background:var(--accent);color:var(--accent-ink);margin-left:40px}
+.msg.a{background:var(--accent-soft);margin-right:40px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.chips:empty{display:none}
+.chip{background:var(--accent-soft);color:var(--accent);font-weight:500;font-size:14px;padding:8px 12px;border-radius:99px;text-align:left}
+.chat-row{display:flex;gap:10px;margin-top:12px}
+.chat-row input{flex:1;min-width:0}
+.check{display:flex;gap:10px;align-items:flex-start;font-weight:500;margin:0}
+.check input{margin-top:4px;accent-color:var(--accent)}
+.hint:empty{display:none}
+.warn{color:var(--danger);font-size:14px;margin:10px 0 0}
+td.tot{text-align:center;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums}
+.pill.muted{background:var(--surface-2);color:var(--mute)}
+.fact-group{margin:10px 0}
+.fact-group ul{margin:4px 0 0 18px;padding:0;font-size:14px}
+</style>
+</head>
+<body>
+<main class="app">
+<header class="topbar">
+  <div class="brand"><h1>Decide</h1><p>Describe a decision. The AI builds the criteria, scores every option, and you adjust what matters to you.</p></div>
+  <div class="menuwrap">
+    <button class="icon-btn" id="menuBtn" aria-label="Menu" aria-haspopup="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>
+    <div class="menu" id="menu" hidden>
+      <button data-m="api">⚙️ AI settings (API key)</button>
+      <button data-m="group">👥 Group decision &amp; merge</button>
+    </div>
+  </div>
+</header>
+
+<section class="card">
+  <div class="field"><label for="q">What are you deciding?</label><input type="text" id="q" placeholder="e.g. Which college should I join after +2?"></div>
+  <div class="field"><label class="label" for="o">Options <span class="opt">(one per line, or leave empty and the AI will choose)</span></label><textarea id="o" placeholder="Option A&#10;Option B&#10;Option C"></textarea></div>
+  <div class="field"><label class="label" for="c">Your situation <span class="opt">(optional)</span></label><textarea id="c" placeholder="Budget, location, priorities, worries…"></textarea></div>
+  <div class="actions"><button id="go">Analyze</button><button class="ghost" id="suggest">✨ Suggest options for me</button><button class="ghost" id="demo">Try an example</button></div>
+  <p class="hint" id="note" style="margin-top:12px"></p>
+  <p class="err" id="err"></p>
+</section>
+
+<div id="out" hidden>
+  <section class="card" id="banner" hidden><p style="margin:0">Shared decision: drag the sliders to set <b>your own</b> priorities, then open <b>⋮ → Group decision</b>, enter your name, and tap <b>Copy my vote code</b> to send it back.</p></section>
+  <section class="card verdict" id="verdict"></section>
+  <section class="card"><div class="card-head"><h2>Ranking</h2><p class="hint">Weighted score out of 100</p></div><div id="rank"></div></section>
+  <section class="card">
+    <div class="card-head"><h2>Score matrix</h2><p class="hint">Drag sliders to change what matters. Totals update live.</p></div>
+    <div class="scroll"><table id="tbl"></table></div>
+    <p class="why" id="why"></p>
+  </section>
+  <section class="card" id="factsCard" hidden>
+    <div class="card-head"><h2>Web-grounded facts</h2><span class="pill" id="gbadge"></span></div>
+    <div id="facts"></div><p class="hint" id="srcs" style="margin-top:12px"></p>
+  </section>
+  <section class="card" id="fuCard">
+    <div class="card-head"><h2>Ask a follow-up</h2><p class="hint">Ask anything about this result</p></div>
+    <div class="chips" id="chips"></div>
+    <div id="chatLog"></div>
+    <div class="chat-row"><input type="text" id="chatIn" placeholder="e.g. What if my budget drops 20%?"><button id="chatSend">Ask</button></div>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2>Stress test</h2><p class="hint">Ask the AI to argue against its own top pick.</p></div>
+    <div class="actions" style="margin-top:0"><button class="ghost" id="devil">Play devil's advocate</button></div>
+    <p class="devil-out" id="devilOut"></p>
+  </section>
+</div>
+</main>
+
+<div class="modal" id="m-api" hidden><div class="sheet"><div class="sheethead"><button class="ghost" data-close>✕ Close</button></div>
+  <section class="card">
+    <div class="card-head"><h2>AI settings</h2><p class="hint">Your key stays in your browser only</p></div>
+    <div class="grid-2">
+      <div><label for="prov">Provider</label><select id="prov"><option value="gemini">Google Gemini (free key)</option><option value="groq">Groq (free key)</option></select></div>
+      <div><label for="model">Model</label><input type="text" id="model" placeholder="model"></div>
+    </div>
+    <div class="field"><label for="key">API key</label><div class="key-wrap"><input type="password" id="key" placeholder="Paste your API key" autocomplete="off"><button type="button" class="link-btn" id="keyShow">Show</button></div></div>
+    <div class="field"><label class="check"><input type="checkbox" id="web" checked><span>Ground answers with live web search<span class="hint" style="display:block">Real prices, ratings and facts, with sources. Slower: up to about 90s.</span></span></label></div>
+  </section>
+</div></div>
+
+<div class="modal" id="m-group" hidden><div class="sheet"><div class="sheethead"><button class="ghost" data-close>✕ Close</button></div>
+  <section class="card" id="group">
+    <div class="card-head"><h2>Group decision</h2><p class="hint">Everyone sets their own weights. No account needed: share the link, collect vote codes, merge.</p></div>
+    <div class="field"><label for="who">Your name</label><input type="text" id="who" placeholder="e.g. Kerzin"></div>
+    <div class="actions" style="margin-top:12px"><button class="ghost" id="share">1. Copy share link</button><button class="ghost" id="myvote">2. Copy my vote code</button></div>
+    <div class="field" style="margin-top:16px"><label for="votes">Paste friends' vote codes (one per line)</label><textarea id="votes" placeholder="Paste codes here"></textarea></div>
+    <div class="actions" style="margin-top:12px"><button id="merge">3. Merge votes</button></div>
+    <div id="gout" style="margin-top:14px"></div>
+  </section>
+</div></div>
+
+<script>
+let data=null, weights={};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+const setBtn=(b,t,busy)=>{b.innerHTML=(busy?'<span class="spinner"></span> ':'')+esc(t)};
+const setGo=(t,busy=true)=>setBtn($('go'),t,busy);
+const DEF={gemini:'gemini-3.8-flash',groq:'openai/gpt-oss-120b'};
+const LS=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
+const SV=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+$('prov').value=LS('prov')||'gemini';
+$('model').value=LS('m2_'+$('prov').value)||DEF[$('prov').value];
+$('key').value=LS('key_'+$('prov').value)||'';
+$('prov').onchange=()=>{const p=$('prov').value;$('model').value=LS('m2_'+p)||DEF[p];$('key').value=LS('key_'+p)||''};
+
+$('web').checked=LS('web')!=='0';
+$('web').onchange=()=>SV('web',$('web').checked?'1':'0');
+let lastSrc=[],lastGrounded=false;
+const okUrl=u=>/^https?:\/\//i.test(u||'');
+async function post(url,headers,body,ms=45000){
+  const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),ms);
+  try{
+    const res=await fetch(url,{method:'POST',headers,body:JSON.stringify(body),signal:ctl.signal});
+    const d=await res.json().catch(()=>({}));
+    return {ok:res.ok,status:res.status,d};
+  }catch(e){
+    throw new Error(e.name==='AbortError'?`Timed out after ${ms/1000}s. Try again, or turn off web search.`:e.message);
+  }finally{clearTimeout(t)}
+}
+async function ask(prompt,json,web=false){
+  lastSrc=[];lastGrounded=false;
+  const p=$('prov').value,key=$('key').value.trim(),model=$('model').value.trim()||DEF[p];
+  if(!key){openModal('api');throw new Error('Add your API key in the ⋮ menu → AI settings.')}
+  SV('prov',p);SV('key_'+p,key);SV('m2_'+p,model);
+  const ms=web?90000:45000;
+  if(p==='gemini'){
+    const H={'Content-Type':'application/json'};
+    const mk=m=>`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent?key=${encodeURIComponent(key)}`;
+    const body=(lvl,g)=>({contents:[{parts:[{text:prompt}]}],...(g?{tools:[{google_search:{}}]}:{}),
+      generationConfig:{...(json&&!g?{responseMimeType:'application/json'}:{}),...(lvl?{thinkingConfig:{thinkingLevel:lvl}}:{})}});
+    const busy=r=>!r.ok&&[429,500,503,504].includes(r.status);
+    const sleep=t=>new Promise(f=>setTimeout(f,t));
+    const models=[model,...['gemini-3.7-flash'].filter(m=>m!==model)];
+    let r,lvl='low',g=web;
+    for(const m of models){
+      for(let i=0;i<3;i++){
+        r=await post(mk(m),H,body(lvl,g),ms);
+        if(!r.ok&&r.status===400){
+          const msg=r.d.error?.message||'';
+          if(lvl&&/think/i.test(msg)){lvl=null;i--;continue}
+          if(g&&/tool|search|ground/i.test(msg)){g=false;i--;continue}
+        }
+        if(!busy(r)) break;
+        setGo('Model busy, retrying…');
+        await sleep(1500*(i+1));
+      }
+      if(!busy(r)) break;
+      setGo('Switching to '+models[1]+'…');
+    }
+    if(!r.ok) throw new Error(busy(r)?'Gemini is overloaded right now. Wait a minute and try again, or switch to Groq in settings.':(r.d.error?.message||('HTTP '+r.status)));
+    const cand=r.d.candidates?.[0];
+    lastGrounded=g;
+    if(g) lastSrc=(cand?.groundingMetadata?.groundingChunks||[]).map(c=>c.web).filter(w=>w&&okUrl(w.uri)).map(w=>({title:w.title||w.uri,url:w.uri}));
+    return cand.content.parts.filter(x=>!x.thought).map(x=>x.text||'').join('');
+  }
+  const url='https://api.groq.com/openai/v1/chat/completions';
+  const H={'Content-Type':'application/json','Authorization':'Bearer '+key};
+  const body=(eff,w)=>({model,messages:[{role:'user',content:prompt}],...(eff?{reasoning_effort:'low'}:{}),...(w?{tools:[{type:'browser_search'}]}:{})});
+  let w=web;
+  let r=await post(url,H,body(true,w),ms);
+  if(!r.ok&&r.status===400) r=await post(url,H,body(false,w),ms);
+  if(!r.ok&&r.status===400&&w){w=false;r=await post(url,H,body(false,false),ms)}
+  if(!r.ok) throw new Error(r.d.error?.message||('HTTP '+r.status));
+  const msg=r.d.choices[0].message;
+  lastGrounded=w;
+  if(w)(msg.executed_tools||[]).forEach(t=>(t.search_results?.results||[]).forEach(x=>okUrl(x.url)&&lastSrc.push({title:x.title||x.url,url:x.url})));
+  return msg.content;
+}
+function renderFacts(){
+  const f=data.facts||{},src=data.sources||[];
+  $('factsCard').hidden=!(Object.values(f).some(v=>v.length)||src.length);
+  $('gbadge').textContent=data.grounded?'live web search':'from the model';
+  $('gbadge').classList.toggle('muted',!data.grounded);
+  $('facts').innerHTML=data.options.map(o=>(f[o]&&f[o].length)?`<div class="fact-group"><b>${esc(o)}</b><ul>${f[o].map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:'').join('');
+  $('srcs').innerHTML=src.length?(data.srcVerified?'Sources: ':'Sources reported by the model, please check them: ')+src.slice(0,8).map(x=>`<a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.title)}</a>`).join(' · '):'';
+}
+const parseJSON=t=>{const a=t.indexOf('{'),b=t.lastIndexOf('}');return JSON.parse(t.slice(a,b+1))};
+
+$('demo').onclick=()=>{
+  $('q').value="Which laptop should I buy for programming and light gaming?";
+  $('o').value="Lenovo LOQ\nASUS Vivobook\nMacBook Air M2\nHP Pavilion";
+  $('c').value="Student in Nepal, budget around NPR 1,20,000, need good battery for college.";
+};
+
+function score(w=weights){
+  const names=data.criteria.map(c=>c.name);
+  const wsum=names.reduce((a,n)=>a+(+w[n]||0),0)||1;
+  return data.options.map(o=>{
+    const t=names.reduce((a,n)=>a+(+w[n]||0)*((data.scores[o]?.[n]?.score)||0),0);
+    return {o,pct:Math.round(t/wsum*10)};
+  }).sort((a,b)=>b.pct-a.pct);
+}
+
+const rankHTML=r=>r.map((x,i)=>`<div class="rank${i==0?' first':''}"><div class="name"><span class="pos">${i+1}</span>${esc(x.o)}${i==0?'<span class="pill">top</span>':''}</div><div class="bar"><i style="width:${x.pct}%"></i></div><span class="val">${x.pct}</span></div>`).join('');
+function paintVerdict(r){
+  const t=r[0],same=!data.aiTop||data.aiTop===t.o;
+  $('verdict').innerHTML=`<div class="ring" style="--p:${t.pct}"><span>${t.pct}</span></div><div><p class="kicker">${same?'Recommended':'Top pick with your priorities'}</p><h2>${esc(t.o)}</h2>`+
+   (same?`<p>${esc(data.summary||'')}</p>`:`<p>Your priorities moved <b>${esc(t.o)}</b> to the top. The AI's original pick was <b>${esc(data.aiTop)}</b>.</p>`)+
+   (data.grounded?'<p class="note">Scored using live web search.</p>':'')+'</div>';
+}
+function showWhy(td){
+  $('tbl').querySelectorAll('td.s.on').forEach(x=>x.classList.remove('on'));td.classList.add('on');
+  $('why').innerHTML=`<strong>${esc(td.dataset.o)} · ${esc(td.dataset.c)}:</strong> ${esc(td.dataset.w||'No reason given.')}`;
+}
+function reveal(){const o=$('out');o.hidden=false;o.classList.remove('reveal');void o.offsetWidth;o.classList.add('reveal');o.scrollIntoView({behavior:'smooth'})}
+function render(){
+  const r=score(),cs=data.criteria,pm=Object.fromEntries(r.map(x=>[x.o,x.pct]));
+  $('rank').innerHTML=rankHTML(r);paintVerdict(r);
+  $('tbl').innerHTML='<tr><th class="opt-h">Option</th>'+cs.map(c=>`<th><div class="crit"><span>${esc(c.name)}</span><input type="range" min="0" max="5" value="${weights[c.name]}" data-n="${esc(c.name)}" aria-label="Importance of ${esc(c.name)}"><span class="w">${weights[c.name]}/5</span></div></th>`).join('')+'<th>Total<br><span class="hint">out of 100</span></th></tr>'
+   +data.options.map(o=>`<tr><td class="opt">${esc(o)}</td>`+cs.map(c=>{const s=data.scores[o]?.[c.name]||{};return `<td class="s" tabindex="0" style="--s:${(s.score||0)/10}" data-o="${esc(o)}" data-c="${esc(c.name)}" data-w="${esc(s.why||'')}">${s.score??'–'}</td>`}).join('')+`<td class="tot" data-o="${esc(o)}">${pm[o]}</td></tr>`).join('');
+  $('tbl').querySelectorAll('input').forEach(i=>i.oninput=()=>{weights[i.dataset.n]=+i.value;i.nextElementSibling.textContent=i.value+'/5';render2()});
+  $('tbl').querySelectorAll('td.s').forEach(td=>{td.onmouseenter=td.onclick=td.onfocus=()=>showWhy(td)});
+  $('why').textContent='Hover, tap or focus a score to see the reason.';
+}
+function render2(){ // live update without rebuilding the table, so sliders keep focus
+  const r=score(),pm=Object.fromEntries(r.map(x=>[x.o,x.pct]));
+  $('rank').innerHTML=rankHTML(r);paintVerdict(r);
+  $('tbl').querySelectorAll('td.tot').forEach(td=>td.textContent=pm[td.dataset.o]);
+}
+
+async function suggestOptions(q,ctx,web){
+  const j=parseJSON(await ask(`The person is deciding: "${q}". Context: "${ctx||'none given'}". They do not know what their options are.
+${web?'Use web search to find real, currently available choices. ':''}Suggest 4 realistic options that differ meaningfully from each other (different trade-offs, not near-duplicates). Keep each name under 6 words and specific, such as a real product, place or course name when relevant.
+Return ONLY JSON: {"options":["",""]}`,true,web));
+  const out=(j.options||[]).map(x=>String(x).trim()).filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).slice(0,5);
+  if(out.length<2) throw new Error('Could not find options. Try adding more detail in "Your situation".');
+  return out;
+}
+$('suggest').onclick=async()=>{
+  const q=$('q').value.trim(),ctx=$('c').value.trim(),web=$('web').checked;
+  $('err').textContent='';$('note').textContent='';
+  if(!q){$('err').textContent='Describe your decision first.';return}
+  $('suggest').disabled=true;setBtn($('suggest'),web?'Searching for options…':'Thinking…',true);
+  try{
+    $('o').value=(await suggestOptions(q,ctx,web)).join('\n');
+    $('note').textContent='AI suggested these options. Edit them if you like, then press Analyze.';
+  }catch(e){$('err').textContent='Could not suggest options: '+(e.message||'try again')}
+  $('suggest').disabled=false;setBtn($('suggest'),'✨ Suggest options for me',false);
+};
+$('go').onclick=async()=>{
+  const q=$('q').value.trim(), ctx=$('c').value.trim();
+  let opts=$('o').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  $('err').textContent='';
+  if(!q){$('err').textContent='Describe your decision first.';return}
+  const web=$('web').checked;
+  $('go').disabled=true;setGo(web?'Searching the web & analyzing… (up to 90s)':'Analyzing…');
+  try{
+    if(opts.length<2){
+      setGo(web?'Searching for options…':'Choosing options…');
+      opts=await suggestOptions(q,ctx,web);
+      $('o').value=opts.join('\n');
+      $('note').textContent='You had no options, so the AI chose these. Edit them and press Analyze again if you like.';
+      setGo(web?'Searching the web & analyzing… (up to 90s)':'Analyzing…');
+    }
+    const prompt=`You are a careful decision analyst. Decision: "${q}". Options: ${JSON.stringify(opts)}. Context: "${ctx||'none given'}".
+${web?'FIRST use web search to look up current, real facts about each option (prices, specs, ratings, fees, dates, reviews). Base your scores on what you find; mark anything you could not confirm as "unverified". Never invent numbers or sources.\n':''}Pick 4-5 criteria that truly matter for this decision, each with an importance weight 1-5. Score every option on every criterion from 1-10 (10 best) with a reason of at most 12 words. Be honest about uncertainty. Write a 2 sentence summary recommending the best option and naming the main trade-off. Also write 3 short questions the person might want to ask you next about this result (for example a what-if, the main risk, or why the top pick won), each under 10 words, written from the person's point of view.
+Return ONLY JSON: {"criteria":[{"name":"","weight":3}],"scores":{"<option>":{"<criterion>":{"score":7,"why":""}}},"summary":"","questions":["","",""]${web?',"facts":{"<option>":["short fact with a number or date (max 3 per option)"]},"sources":[{"title":"","url":""}]':''}}. Use the exact option strings as keys.`;
+    const j=parseJSON(await ask(prompt,true,web));
+    const facts=Object.fromEntries(Object.entries(web?(j.facts||{}):{}).map(([k,v])=>[k,Array.isArray(v)?v.slice(0,3).map(String):[]]));
+    const srcs=(lastSrc.length?lastSrc:(web?(j.sources||[]):[]).filter(x=>okUrl(x.url))).filter((x,i,a)=>a.findIndex(y=>y.url===x.url)===i);
+    data={criteria:j.criteria,scores:j.scores,summary:j.summary,options:opts,question:q,context:ctx,facts,sources:srcs,srcVerified:lastSrc.length>0,grounded:web&&lastGrounded,questions:Array.isArray(j.questions)?j.questions.map(String).filter(Boolean).slice(0,3):[]};
+    if(web&&!lastGrounded) $('err').textContent='Web search was not available for this model, so this result is not web-grounded.';
+    weights={};j.criteria.forEach(c=>weights[c.name]=c.weight);data.aiTop=score()[0].o;
+    $('out').hidden=false;$('devilOut').textContent='';chat=[];$('chatLog').innerHTML='';render();renderFacts();renderChips();reveal();
+  }catch(e){$('err').textContent='Could not analyze: '+(e.message||'try again');}
+  $('go').disabled=false;setGo('Analyze',false);
+};
+
+$('devil').onclick=async()=>{
+  const top=score()[0].o;$('devil').disabled=true;$('devilOut').textContent='Thinking…';
+  try{
+    const r=await ask(`Decision: "${data.question}". Context: "${data.context||'none'}". The analysis picked "${top}" over ${JSON.stringify(data.options.filter(o=>o!==top))}. Argue against this pick: give the 3 strongest reasons it could be wrong, and one question the person should answer before committing. Be concise (under 120 words), plain text, no markdown.`,false,$('web').checked);
+    $('devilOut').textContent=r;
+  }catch(e){$('devilOut').textContent='Could not run: '+e.message;}
+  $('devil').disabled=false;
+};
+
+/* ---------- Group decision (no backend) ---------- */
+const enc=o=>btoa(unescape(encodeURIComponent(JSON.stringify(o))));
+const dec=t=>JSON.parse(decodeURIComponent(escape(atob(t.trim()))));
+async function copy(t,btn){
+  const o=btn.textContent;
+  try{await navigator.clipboard.writeText(t);btn.textContent='Copied!';setTimeout(()=>btn.textContent=o,1500)}
+  catch(e){prompt('Copy this:',t)}
+}
+$('share').onclick=()=>{
+  if(!data){$('gout').textContent='Run an analysis first.';return}
+  const p={q:data.question,o:data.options,c:data.criteria,s:data.scores,m:data.summary,f:data.facts};
+  copy(location.origin+location.pathname+'#d='+enc(p),$('share'));
+};
+$('myvote').onclick=()=>copy(enc({n:$('who').value.trim()||'Anonymous',w:weights}),$('myvote'));
+$('merge').onclick=()=>{
+  if(!data){$('gout').textContent='Run an analysis first.';return}
+  const names=data.criteria.map(c=>c.name);
+  const people=[{n:$('who').value.trim()||'Me',w:{...weights}}];
+  let bad=0;
+  $('votes').value.split('\n').map(l=>l.trim()).filter(Boolean).forEach(l=>{
+    try{const v=dec(l);if(v&&v.w)people.push(v);else bad++}catch(e){bad++}
+  });
+  const norm=w=>{const t=names.reduce((a,n)=>a+(+w[n]||0),0)||1;return Object.fromEntries(names.map(n=>[n,(+w[n]||0)/t]))};
+  const nw=people.map(p=>norm(p.w));
+  const gw=Object.fromEntries(names.map(n=>[n,nw.reduce((a,w)=>a+w[n],0)/nw.length]));
+  const gr=score(gw), win=gr[0].o;
+  const tops=people.map((p,i)=>({n:p.n,top:score(nw[i])[0].o}));
+  const agree=tops.filter(t=>t.top===win).length;
+  const spread=names.map(n=>({n,sd:Math.sqrt(nw.reduce((a,w)=>a+(w[n]-gw[n])**2,0)/nw.length)})).sort((a,b)=>b.sd-a.sd)[0];
+  $('gout').innerHTML=
+   `<p style="margin:0 0 8px"><b>Group pick: ${esc(win)}</b> <span class="hint">— ${agree} of ${people.length} people have it as their own top choice.</span></p>`+
+   rankHTML(gr)+
+   `<p class="hint" style="margin:10px 0 4px">Each person's own top pick:</p>`+
+   tops.map(t=>`<div style="font-size:14px">${esc(t.n)} → <b>${esc(t.top)}</b></div>`).join('')+
+   (people.length>1?`<p class="warn" style="font-size:14px;margin:10px 0 0">Biggest disagreement: <b>${esc(spread.n)}</b>. Talk about this one first.</p>`:'')+
+   (bad?`<p class="err">${bad} code(s) could not be read.</p>`:'');
+};
+
+/* Open a shared link */
+(function(){
+  if(!location.hash.startsWith('#d=')) return;
+  try{
+    const p=dec(location.hash.slice(3));
+    data={criteria:p.c,scores:p.s,summary:p.m,options:p.o,question:p.q,context:'',facts:p.f||{},sources:[],grounded:!!p.f&&Object.keys(p.f).length>0};
+    weights={};p.c.forEach(c=>weights[c.name]=c.weight);data.aiTop=score()[0].o;
+    $('q').value=p.q;$('o').value=p.o.join('\n');
+    $('out').hidden=false;$('banner').hidden=false;render();renderFacts();renderChips();reveal();
+  }catch(e){$('err').textContent='This share link looks broken.'}
+})();
+
+
+/* ---------- Menu, modals, chat ---------- */
+let chat=[];
+function openModal(n){
+  $('menu').hidden=true;
+  document.querySelectorAll('.modal').forEach(m=>m.hidden=true);
+  $('m-'+n).hidden=false;
+  if(n==='chat') setTimeout(()=>$('chatIn').focus(),50);
+}
+$('menuBtn').onclick=e=>{e.stopPropagation();$('menu').hidden=!$('menu').hidden};
+document.addEventListener('click',e=>{if(!e.target.closest('.menuwrap'))$('menu').hidden=true});
+document.querySelectorAll('#menu [data-m]').forEach(b=>b.onclick=()=>openModal(b.dataset.m));
+document.querySelectorAll('.modal').forEach(m=>{
+  m.onclick=e=>{if(e.target===m)m.hidden=true};
+  m.querySelector('[data-close]').onclick=()=>m.hidden=true;
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal').forEach(m=>m.hidden=true)});
+
+function addMsg(role,t){
+  const d=document.createElement('div');d.className='msg '+(role==='u'?'u':'a');d.textContent=t;
+  $('chatLog').appendChild(d);d.scrollIntoView({block:'end'});return d;
+}
+async function sendChat(){
+  const t=$('chatIn').value.trim();if(!t)return;
+  if(!data){addMsg('a','Run an analysis first, then ask me about it.');return}
+  $('chatIn').value='';addMsg('u',t);chat.push({r:'User',t});
+  const wait=addMsg('a','Thinking…');$('chatSend').disabled=true;
+  try{
+    const r=score();
+    const sc=Object.fromEntries(data.options.map(o=>[o,Object.fromEntries(data.criteria.map(c=>[c.name,data.scores[o]?.[c.name]?.score]))]));
+    const ctx=`Decision: "${data.question}". Situation: "${data.context||'none'}". Current weighted ranking: ${r.map(x=>x.o+' '+x.pct).join(', ')}. Criteria weights (0-5): ${JSON.stringify(weights)}. Scores (1-10): ${JSON.stringify(sc)}. Known facts: ${JSON.stringify(data.facts||{})}.`;
+    const hist=chat.slice(-8,-1).map(m=>m.r+': '+m.t).join('\n');
+    const reply=await ask(`You are a helpful decision coach. ${ctx}\n${hist?'Conversation so far:\n'+hist+'\n':''}User: ${t}\nAnswer directly in under 150 words, plain text, no markdown. If the answer depends on facts you are unsure of, say so.`,false,$('web').checked);
+    wait.textContent=reply;chat.push({r:'Coach',t:reply});
+  }catch(e){wait.textContent='Could not answer: '+e.message}
+  $('chatSend').disabled=false;
+  if(!$('go').disabled)setGo('Analyze',false);
+}
+$('chatSend').onclick=sendChat;
+$('chatIn').onkeydown=e=>{if(e.key==='Enter')sendChat()};
+
+/* ---------- Follow-up Q&A after the result ---------- */
+function renderChips(){
+  const qs=(data.questions&&data.questions.length)?data.questions:['Why did the top pick win?','What are the biggest risks?','What would change the ranking?'];
+  $('chips').innerHTML=qs.map(q=>`<button class="chip" type="button">${esc(q)}</button>`).join('');
+  $('chips').querySelectorAll('.chip').forEach(b=>b.onclick=()=>{$('chatIn').value=b.textContent;sendChat()});
+}
+$('keyShow').onclick=()=>{const k=$('key'),show=k.type==='password';k.type=show?'text':'password';$('keyShow').textContent=show?'Hide':'Show'};
+</script>
+</body>
+</html>
