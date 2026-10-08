@@ -21,17 +21,17 @@ Evidence Check — asks whether a claim is actually supported by available evide
 
 ## Tech Stack
 
-> Fill this in once decided. Example:
-> - Frontend: 
-> - Backend: 
-> - Other tools / APIs: 
+- Frontend: HTML, CSS and JavaScript (`index.html` and `style.css`), no build step
+- Backend: none. The page runs in your browser and calls the AI provider directly
+- APIs: Google Gemini API and Groq API (free keys, each user brings their own)
 
 ## Getting Started
 
 ### Prerequisites
 
 - [Git](https://git-scm.com/)
-- Add the language runtime or tools your project needs here
+- A modern web browser (Chrome, Firefox, Edge)
+- A free API key from Google Gemini or Groq (see "Get an API Key" below)
 
 ### Installation
 
@@ -41,19 +41,44 @@ git clone https://github.com/Hacktoberfest-Hackday-x-Graphilla/decision_maker.gi
 
 # 2. Move into the project folder
 cd decision_maker
-
-# 3. Install dependencies (update for your stack)
-# npm install
-# pip install -r requirements.txt
 ```
+
+There are no dependencies to install.
 
 ### Running the project
 
-```bash
-# Add the command that starts the project, for example:
-# npm start
-# python main.py
-```
+Open `index.html` in your web browser (double-click the file). Then open **AI settings**, choose a provider, and paste your API key.
+
+## Get an API Key
+
+The app has no server, so each person uses **their own** key. There is no key in this repo.
+
+| Provider | Where to get a free key |
+|----------|-------------------------|
+| Google Gemini | https://aistudio.google.com/apikey |
+| Groq | https://console.groq.com/keys |
+
+Steps:
+
+1. Create a key at one of the links above.
+2. Open the app and expand **AI settings**.
+3. Pick the same provider in the provider menu ("Google Gemini (free key)" or "Groq (free key)").
+4. Paste the key into the **API key** box. Use **Show** to check what you pasted.
+5. Run a decision. The status next to "AI settings" changes to "Key saved".
+
+Your key is stored only in your own browser and sent only to the provider you picked.
+
+## Keep Your Key Safe
+
+- Never type your key into the code or commit it to GitHub.
+- Do not share your key in screenshots, chats, or pull requests.
+- If a key leaks, delete it on the provider's website and create a new one.
+
+## Troubleshooting
+
+- **"Paste your API key in AI settings first"**: the API key box is empty.
+- **"Gemini is overloaded right now"**: wait a minute and try again, or switch to Groq in AI settings.
+- **HTTP 400, 401 or 403**: the key is wrong, expired, or from a different provider than the one selected.
 
 ## How It Works
 
@@ -90,5 +115,6 @@ Please never commit directly to `main`.
 - [ ] Results and explanation screen
 - [ ] Demo and presentation
 
+## License
 
-
+This project is licensed under the GPL-3.0 license. See `LICENSE.txt`.
