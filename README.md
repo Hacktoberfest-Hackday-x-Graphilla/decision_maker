@@ -10,12 +10,14 @@ Making choices is hard. We overthink, go back and forth, and lose time weighing 
 
 ## Features
 
-- Enter the decision you are trying to make
-- Add multiple options to compare
-- Define the criteria that matter and how important each one is
-- Get a clear recommendation with the reasoning behind it
+- User-Bias / Critical Thinking Features
+Bias Detection — identifies when an AI response may be overly agreeable to the user's claim.
+Counterargument Generator — automatically provides reasonable opposing viewpoints.
+Assumption Checker — highlights assumptions the user is making without evidence.
+Fact vs. Opinion — separates objectively verifiable claims from opinions or interpretations.
+Confidence Indicator — shows how certain the AI should be about its answer.
+Evidence Check — asks whether a claim is actually supported by available evidence.
 
-> This list will grow as the project does. Update it as features are completed.
 
 ## Tech Stack
 

@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Decide — AI Decision Helper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <h1>Decide</h1>
+      <p>Describe a decision. The AI picks the criteria and scores every option. Then you adjust what matters to you.</p>
+    </div>
+    <button class="icon-btn" id="theme" type="button" aria-label="Toggle light and dark theme" title="Toggle theme">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
+      </svg>
+    </button>
+  </header>
+
+  <!-- AI settings -->
+  <details class="card settings" id="settings">
+    <summary>AI settings <span class="state" id="keyState">No key saved</span></summary>
+    <div class="body">
+      <div class="grid-2">
+        <div class="field">
+          <label for="prov">Provider</label>
+          <select id="prov">
+            <option value="gemini">Google Gemini (free key)</option>
+            <option value="groq">Groq (free key)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="model">Model</label>
+          <input type="text" id="model" placeholder="model name" autocomplete="off" spellcheck="false">
+        </div>
+      </div>
+      <div class="field">
+        <label for="key">API key</label>
+        <div class="key-wrap">
+          <input type="password" id="key" placeholder="Paste your API key" autocomplete="off" spellcheck="false">
+          <button type="button" class="link-btn" id="showKey">Show</button>
+        </div>
+        <p class="hint" style="margin-top:6px">Your key is stored only in this browser and sent only to the provider you pick.</p>
+      </div>
+    </div>
+  </details>
+
+  <!-- Decision form -->
+  <section class="card" aria-labelledby="formTitle">
+    <div class="card-head"><h2 id="formTitle">Your decision</h2></div>
+
+    <div class="field">
+      <label for="q">What are you deciding?</label>
+      <input type="text" id="q" placeholder="e.g. Which college should I join after +2?">
+    </div>
+    <div class="field">
+      <label for="o">Options <span class="hint">(one per line, at least two)</span></label>
+      <textarea id="o" placeholder="Option A&#10;Option B&#10;Option C"></textarea>
+    </div>
+    <div class="field">
+      <label for="c">Your situation <span class="hint">(optional)</span></label>
+      <textarea id="c" placeholder="Budget, location, priorities, worries…"></textarea>
+    </div>
+
+    <div class="actions">
+      <button id="go" type="button">Analyze</button>
+      <button class="ghost" id="demo" type="button">Fill in an example</button>
+    </div>
+    <p class="err" id="err" role="alert"></p>
+  </section>
+
+  <!-- Results -->
+  <div id="out" hidden>
+    <section class="card verdict" id="verdict" aria-live="polite"></section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Ranking</h2>
+        <p class="hint">Scores out of 100, weighted by your sliders</p>
+      </div>
+      <div id="rank"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Score matrix</h2>
+        <button class="link-btn" id="resetW" type="button">Reset weights</button>
+      </div>
+      <p class="hint" style="margin-bottom:12px">Drag a slider to change how much a criterion counts. Hover or tap a score to see the reason.</p>
+      <div class="scroll"><table id="tbl"></table></div>
+      <p class="why" id="why" aria-live="polite">Select a score to see why it was given.</p>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>Stress test</h2></div>
+      <p class="hint">Ask the AI to argue against its own top pick.</p>
+      <div class="actions" style="margin-top:12px">
+        <button class="ghost" id="devil" type="button">Argue against the top pick</button>
+      </div>
+      <p class="devil-out" id="devilOut"></p>
+    </section>
+  </div>
+
+</main>
+
+<script>
+/* ---------- helpers ---------- */
+let data = null, weights = {}, baseWeights = {}, baseTop = '';
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const DEF = { gemini: 'gemini-3.8-flash', groq: 'openai/gpt-oss-120b' };
+const LS = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const SV = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+
+/* ---------- theme ---------- */
+function applyTheme(t) { if (t) document.documentElement.setAttribute('data-theme', t); }
+applyTheme(LS('theme'));
+$('theme').onclick = () => {
+  const cur = document.documentElement.getAttribute('data-theme')
+    || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  applyTheme(next); SV('theme', next);
+};
+
+/* ---------- settings ---------- */
+function loadProvider() {
+  const p = $('prov').value;
+  $('model').value = LS('m2_' + p) || DEF[p];
+  $('key').value = LS('key_' + p) || '';
+  updateKeyState();
+}
+function updateKeyState() {
+  const has = !!$('key').value.trim();
+  $('keyState').textContent = has ? 'Key saved' : 'No key saved';
+  if (!has) $('settings').open = true;
+}
+$('prov').value = LS('prov') || 'gemini';
+loadProvider();
+$('prov').onchange = loadProvider;
+$('key').oninput = () => { $('keyState').textContent = $('key').value.trim() ? 'Key entered' : 'No key saved'; };
+$('showKey').onclick = () => {
+  const show = $('key').type === 'password';
+  $('key').type = show ? 'text' : 'password';
+  $('showKey').textContent = show ? 'Hide' : 'Show';
+};
+
+/* ---------- busy state ---------- */
+function setBusy(on, text) {
+  const b = $('go');
+  b.disabled = on;
+  b.innerHTML = on ? '<span class="spinner" aria-hidden="true"></span><span></span>' : 'Analyze';
+  if (on) b.lastChild.textContent = text || 'Analyzing…';
+}
+
+/* ---------- AI calls ---------- */
+async function post(url, headers, body) {
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 45000);
+  try {
+    const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal: ctl.signal });
+    const d = await res.json().catch(() => ({}));
+    return { ok: res.ok, status: res.status, d };
+  } catch (e) {
+    throw new Error(e.name === 'AbortError' ? 'Timed out after 45s. Try a faster model (e.g. openai/gpt-oss-20b) or click again.' : e.message);
+  } finally { clearTimeout(t); }
+}
+
+async function ask(prompt, json) {
+  const p = $('prov').value, key = $('key').value.trim(), model = $('model').value.trim() || DEF[p];
+  if (!key) { $('settings').open = true; throw new Error('Paste your API key in AI settings first.'); }
+  SV('prov', p); SV('key_' + p, key); SV('m2_' + p, model);
+  updateKeyState();
+
+  if (p === 'gemini') {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
+    const H = { 'Content-Type': 'application/json' };
+    const body = lvl => ({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { ...(json ? { responseMimeType: 'application/json' } : {}), ...(lvl ? { thinkingConfig: { thinkingLevel: lvl } } : {}) }
+    });
+    const busy = r => !r.ok && [429, 500, 503, 504].includes(r.status);
+    const sleep = ms => new Promise(f => setTimeout(f, ms));
+    const models = [model, ...['gemini-3.7-flash'].filter(m => m !== model)];
+    let r;
+    for (const m of models) {
+      const u = url.replace(/models\/[^:]+:/, 'models/' + encodeURIComponent(m) + ':');
+      for (let i = 0; i < 3; i++) {
+        r = await post(u, H, body('low'));
+        if (!r.ok && r.status === 400 && /think/i.test(r.d.error?.message || '')) r = await post(u, H, body(null));
+        if (!busy(r)) break;
+        if ($('go').disabled) setBusy(true, 'Model busy, retrying…');
+        await sleep(1500 * (i + 1));
+      }
+      if (!busy(r)) break;
+      if ($('go').disabled) setBusy(true, 'Switching to ' + models[1] + '…');
+    }
+    if (!r.ok) throw new Error(busy(r) ? 'Gemini is overloaded right now. Wait a minute and try again, or switch to Groq in settings.' : (r.d.error?.message || ('HTTP ' + r.status)));
+    return r.d.candidates[0].content.parts.filter(x => !x.thought).map(x => x.text || '').join('');
+  }
+
+  const url = 'https://api.groq.com/openai/v1/chat/completions';
+  const H = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key };
+  const body = eff => ({ model, messages: [{ role: 'user', content: prompt }], ...(eff ? { reasoning_effort: 'low' } : {}) });
+  let r = await post(url, H, body(true));
+  if (!r.ok && r.status === 400) r = await post(url, H, body(false));
+  if (!r.ok) throw new Error(r.d.error?.message || ('HTTP ' + r.status));
+  return r.d.choices[0].message.content;
+}
+
+const parseJSON = t => { const a = t.indexOf('{'), b = t.lastIndexOf('}'); return JSON.parse(t.slice(a, b + 1)); };
+
+/* ---------- example ---------- */
+$('demo').onclick = () => {
+  $('q').value = 'Which laptop should I buy for programming and light gaming?';
+  $('o').value = 'Lenovo LOQ\nASUS Vivobook\nMacBook Air M2\nHP Pavilion';
+  $('c').value = 'Student in Nepal, budget around NPR 1,20,000, need good battery for college.';
+};
+
+/* ---------- scoring ---------- */
+function score() {
+  const names = data.criteria.map(c => c.name);
+  const wsum = names.reduce((a, n) => a + weights[n], 0) || 1;
+  return data.options.map(o => {
+    const t = names.reduce((a, n) => a + weights[n] * ((data.scores[o]?.[n]?.score) || 0), 0);
+    return { o, pct: Math.round(t / wsum * 10) };
+  }).sort((a, b) => b.pct - a.pct);
+}
+
+/* ---------- rendering ---------- */
+function renderRank() {
+  const r = score();
+  $('rank').innerHTML = r.map((x, i) =>
+    `<div class="rank${i === 0 ? ' first' : ''}">
+       <div class="name"><span class="pos">${i + 1}</span>${esc(x.o)}${i === 0 ? '<span class="pill">top</span>' : ''}</div>
+       <div class="bar" role="img" aria-label="${esc(x.o)} scores ${x.pct} out of 100"><i style="width:${x.pct}%"></i></div>
+       <span class="val">${x.pct}</span>
+     </div>`).join('');
+
+  const changed = r[0].o !== baseTop;
+  $('verdict').innerHTML =
+    `<div class="ring" style="--p:${r[0].pct}"><span>${r[0].pct}</span></div>
+     <div>
+       <p class="kicker">${changed ? 'Top pick with your weights' : 'Recommended'}</p>
+       <h2>${esc(r[0].o)}</h2>
+       <p>${esc(data.summary || '')}</p>
+       ${changed ? `<p class="note">The AI originally recommended <strong>${esc(baseTop)}</strong>. Your weights changed the result.</p>` : ''}
+     </div>`;
+}
+
+function renderTable() {
+  const cs = data.criteria;
+  $('tbl').innerHTML =
+    '<thead><tr><th class="opt-h" scope="col">Option</th>' +
+    cs.map(c => `<th scope="col"><div class="crit">
+        <span>${esc(c.name)}</span>
+        <input type="range" min="0" max="5" value="${weights[c.name]}" data-n="${esc(c.name)}" aria-label="Importance of ${esc(c.name)}">
+        <span class="w" data-wl="${esc(c.name)}">Weight ${weights[c.name]}</span>
+      </div></th>`).join('') + '</tr></thead><tbody>' +
+    data.options.map(o => '<tr><th class="opt" scope="row" style="text-align:left">' + esc(o) + '</th>' +
+      cs.map(c => {
+        const s = data.scores[o]?.[c.name] || {};
+        const n = Number(s.score);
+        const val = Number.isFinite(n) ? n : null;
+        return `<td class="s" tabindex="0" style="--s:${val === null ? 0 : val / 10}" title="${esc(s.why || '')}"
+                  data-o="${esc(o)}" data-c="${esc(c.name)}" data-w="${esc(s.why || '')}">${val ?? '–'}</td>`;
+      }).join('') + '</tr>').join('') + '</tbody>';
+
+  $('tbl').querySelectorAll('input[type=range]').forEach(i => i.oninput = () => {
+    weights[i.dataset.n] = +i.value;
+    const lbl = $('tbl').querySelector(`[data-wl="${CSS.escape(i.dataset.n)}"]`);
+    if (lbl) lbl.textContent = 'Weight ' + i.value;
+    renderRank();
+  });
+
+  const show = td => {
+    $('tbl').querySelectorAll('td.s.on').forEach(x => x.classList.remove('on'));
+    td.classList.add('on');
+    $('why').innerHTML = `<strong>${esc(td.dataset.o)} · ${esc(td.dataset.c)}:</strong> ${esc(td.dataset.w || 'No reason given.')}`;
+  };
+  $('tbl').querySelectorAll('td.s').forEach(td => {
+    td.onmouseenter = td.onclick = td.onfocus = () => show(td);
+  });
+}
+
+function renderAll() {
+  renderRank();
+  renderTable();
+}
+
+$('resetW').onclick = () => { weights = { ...baseWeights }; renderAll(); };
+
+/* ---------- analyze ---------- */
+$('go').onclick = async () => {
+  const q = $('q').value.trim(),
+        opts = $('o').value.split('\n').map(s => s.trim()).filter(Boolean),
+        ctx = $('c').value.trim();
+  $('err').textContent = '';
+  if (!q || opts.length < 2) { $('err').textContent = 'Add a decision and at least two options.'; return; }
+  setBusy(true, 'Analyzing… (up to 45s)');
+  try {
+    const prompt = `You are a careful decision analyst. Decision: "${q}". Options: ${JSON.stringify(opts)}. Context: "${ctx || 'none given'}".
+Pick 4-5 criteria that truly matter for this decision, each with an importance weight 1-5. Score every option on every criterion from 1-10 (10 best) with a reason of at most 12 words. Be honest about uncertainty; do not invent facts. Write a 2 sentence summary recommending the best option and naming the main trade-off.
+Return ONLY JSON: {"criteria":[{"name":"","weight":3}],"scores":{"<option>":{"<criterion>":{"score":7,"why":""}}},"summary":""}. Use the exact option strings as keys.`;
+    const j = parseJSON(await ask(prompt, true));
+    data = { criteria: j.criteria, scores: j.scores, summary: j.summary, options: opts, question: q, context: ctx };
+    weights = {}; j.criteria.forEach(c => weights[c.name] = Number(c.weight) || 3);
+    baseWeights = { ...weights };
+    baseTop = score()[0].o;
+    $('out').hidden = false;
+    $('devilOut').textContent = '';
+    $('why').textContent = 'Select a score to see why it was given.';
+    $('out').classList.remove('reveal'); void $('out').offsetWidth; $('out').classList.add('reveal');
+    renderAll();
+    $('out').scrollIntoView({ behavior: 'smooth' });
+  } catch (e) {
+    $('err').textContent = 'Could not analyze: ' + (e.message || 'try again');
+  }
+  setBusy(false);
+};
+
+/* ---------- devil's advocate ---------- */
+$('devil').onclick = async () => {
+  const top = score()[0].o, btn = $('devil');
+  btn.disabled = true; $('devilOut').textContent = 'Thinking…';
+  try {
+    const r = await ask(`Decision: "${data.question}". Context: "${data.context || 'none'}". The analysis picked "${top}" over ${JSON.stringify(data.options.filter(o => o !== top))}. Argue against this pick: give the 3 strongest reasons it could be wrong, and one question the person should answer before committing. Be concise (under 120 words), plain text, no markdown.`, false);
+    $('devilOut').textContent = r.trim();
+  } catch (e) {
+    $('devilOut').textContent = 'Could not run: ' + e.message;
+  }
+  btn.disabled = false;
+};
+</script>
+</body>
+</html>
