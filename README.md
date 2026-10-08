@@ -62,12 +62,12 @@ cd decision_maker
 
 ## Team
 
-| Name | Role | GitHub |
-|------|------|--------|
-| Member 1 | | |
-| Member 2 | | |
-| Member 3 | | |
-| Member 4 | | |
+| Name        | Role.               | GitHub          |
+|-------------|---------------------|-----------------|
+| Sebak Kafle | UI and idea         | aquanovadev-ai  |
+| Shivam karna| Documentation and UI| shivamkarna50-ai|
+| Birat Poudel| Front end           | tsukii44.       |
+| Rajat Tiwari| Documentation.      | aryanrajattiwari|
 
 ## Contributing (for teammates)
 
@@ -88,6 +88,5 @@ Please never commit directly to `main`.
 - [ ] Results and explanation screen
 - [ ] Demo and presentation
 
-## License
 
-Add a license here if you choose one (MIT is a common choice for hackathons).
+
